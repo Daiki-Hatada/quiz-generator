@@ -1,0 +1,45 @@
+{
+  "name": "notion-rag",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "vitest",
+    "dev": "tsx src/index.ts --watch",
+    "start": "node dist/index.js",
+    "build": "NODE_OPTIONS=--max_old_space_size=4096 tsc",
+    "prepare": "husky || true",
+    "format": "biome format --write",
+    "check": "biome check --write",
+    "lint": "biome lint --write"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@hono/node-server": "^1.13.7",
+    "@huggingface/inference": "^2.8.1",
+    "@langchain/community": "^0.3.20",
+    "@langchain/core": "^0.3.37",
+    "@langchain/google-vertexai": "^0.1.5",
+    "@langchain/openai": "^0.3.16",
+    "@langchain/textsplitters": "^0.1.0",
+    "@notionhq/client": "^2.2.15",
+    "faiss-node": "^0.5.1",
+    "firebase-admin": "^13.0.2",
+    "hono": "^4.6.15",
+    "langchain": "^0.3.8",
+    "notion-to-md": "^3.1.1",
+    "pdf-parse": "^1.1.1",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@types/node": "^22.10.2",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.3.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}
