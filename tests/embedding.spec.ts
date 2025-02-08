@@ -19,7 +19,7 @@ describe(
         },
         method: 'POST',
         body: JSON.stringify({
-          uri: 'gs://vertex-ai-api-413406.firebasestorage.app/pdf/ssw2_jf_customer_service_text_ja_v231227.pdf',
+          uri: 'gs://xxxx.firebasestorage.app/pdf/ssw2_jf_customer_service_text_ja_v231227.pdf',
           vectorStoreSourcePrefix: 'ssw-vector',
         }),
       })
