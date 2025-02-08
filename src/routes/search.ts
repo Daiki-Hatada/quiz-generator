@@ -11,6 +11,7 @@ import {
   RunnablePassthrough,
   RunnableSequence,
 } from '@langchain/core/runnables'
+import { ChatGoogleGenerativeAI } from '@langchain/google-genai'
 import { VertexAIEmbeddings } from '@langchain/google-vertexai'
 import { ChatOpenAI, OpenAIEmbeddings } from '@langchain/openai'
 import { Hono } from 'hono'
@@ -53,7 +54,25 @@ search.post(
     return parsed.data
   }),
   async (c) => {
-    const { query, vectorStoreSourcePrefix } = c.req.valid('json')
+    const { query: userQuery, vectorStoreSourcePrefix } = c.req.valid('json')
+
+    const gpt35 = new ChatOpenAI({
+      model: 'gpt-3.5-turbo',
+      apiKey: env.OPENAI_API_KEY,
+    })
+
+    const gemini = new ChatGoogleGenerativeAI({
+      model: 'gemini-2.0-flash',
+      temperature: 0,
+      maxRetries: 2,
+      apiKey: env.GEMINI_API_KEY,
+    })
+
+    const query = await gemini
+      .invoke(
+        `以下の質問を分かりやすい日本語に変換してください。\n以下変換対象\n\n---\n${userQuery}`,
+      )
+      .then((msg) => msg.content.toString())
 
     const huggingFaceInferenceEmbeddings = new HuggingFaceInferenceEmbeddings({
       apiKey: env.HUGGINGFACE_ACCESS_TOKEN,
@@ -95,11 +114,6 @@ search.post(
     )
     await rm(tmpLocalVectorStorePathname, { recursive: true, force: true })
 
-    const llm = new ChatOpenAI({
-      model: 'gpt-4o-mini',
-      apiKey: env.OPENAI_API_KEY,
-    })
-
     const parseRetrieverInput = (params: { messages: BaseMessage[] }) => {
       const lastMessage = params.messages.at(-1)
       if (lastMessage?.content) {
@@ -128,7 +142,7 @@ Do not speculate or create information. Be sure to answer in Japanese.
 </context>
 `
     const documentChain = await createStuffDocumentsChain({
-      llm,
+      llm: gpt35,
       prompt: ChatPromptTemplate.fromMessages([
         ['system', SYSTEM_TEMPLATE],
         new MessagesPlaceholder('messages'),
@@ -137,14 +151,16 @@ Do not speculate or create information. Be sure to answer in Japanese.
 
     const parser = StructuredOutputParser.fromZodSchema(QuizListSchema)
     const parserChain = RunnableSequence.from([
-      (params: { query: string }) => ({
-        query: params.query,
-        format_instructions: parser.getFormatInstructions(),
-      }),
+      (params: { query: string }) => {
+        return {
+          query: params.query,
+          format_instructions: parser.getFormatInstructions(),
+        }
+      },
       ChatPromptTemplate.fromTemplate(
         'Answer the users question as best as possible.\n{format_instructions}\n{query}',
       ),
-      llm,
+      gemini,
       parser,
     ])
 
@@ -158,9 +174,11 @@ Do not speculate or create information. Be sure to answer in Japanese.
         result: parserChain,
       })
 
-    const output: unknown = await chain.invoke({
-      messages: [new HumanMessage(query)],
-    })
+    const output: unknown = await chain
+      .invoke({
+        messages: [new HumanMessage(query)],
+      })
+      .catch(console.error)
 
     const { result } = ChainResultSchema.parse(output)
     return c.json({

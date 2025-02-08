@@ -35,14 +35,13 @@ async function uploadDirectory(
 }
 
 const RequestBodySchema = z.object({
-  url: z.string().optional(),
-  path: z.string().optional(),
+  uri: z.string(),
   vectorStoreSourcePrefix: z.string(),
 })
 
 export const embedding = new Hono()
 
-const loadPdfDocs = async (path: string) => {
+const loadPdfDocs = async (path: string | Blob) => {
   const loader = new PDFLoader(path)
   return loader.load()
 }
@@ -56,8 +55,20 @@ embedding.post(
     return parsed.data
   }),
   async (c) => {
-    const { path, vectorStoreSourcePrefix } = c.req.valid('json')
-    const docs = path !== undefined ? await loadPdfDocs(path) : []
+    const { uri, vectorStoreSourcePrefix } = c.req.valid('json')
+    const path = uri.split(`${storage.bucket().name}/`)[1]
+
+    const [url] = await storage
+      .bucket()
+      .file(path)
+      .getSignedUrl({
+        action: 'read',
+        expires: Date.now() + 15 * 60 * 1000,
+      })
+    const buffer = await fetch(url).then((res) => res.arrayBuffer())
+    const blob = new Blob([buffer])
+
+    const docs = path !== undefined ? await loadPdfDocs(blob) : []
 
     const textSplitter = new RecursiveCharacterTextSplitter({
       chunkSize: 400,
@@ -95,8 +106,11 @@ embedding.post(
       vectorStoreSourcePrefix,
     )
     await rm(tmpLocalVectorStorePathname, { recursive: true, force: true })
+
+    const destinationUri = storage.bucket().file(vectorStoreSourcePrefix)
+      .cloudStorageURI.href
     return c.json({
-      message: 'Success',
+      message: destinationUri,
     })
   },
 )

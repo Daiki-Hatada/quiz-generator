@@ -6,6 +6,13 @@ export const env = {
     // biome-ignore lint/nursery/noProcessEnv: This is the only place where we should be using `process.env`.
     return process.env.CLIENT_EMAIL
   })(),
+  GEMINI_API_KEY: (() => {
+    // biome-ignore lint/nursery/noProcessEnv: This is the only place where we should be using `process.env`.
+    if (typeof process.env.GEMINI_API_KEY !== 'string')
+      throw new Error('`GEMINI_API_KEY` is not properly set.')
+    // biome-ignore lint/nursery/noProcessEnv: This is the only place where we should be using `process.env`.
+    return process.env.GEMINI_API_KEY
+  })(),
   HUGGINGFACE_ACCESS_TOKEN: (() => {
     // biome-ignore lint/nursery/noProcessEnv: This is the only place where we should be using `process.env`.
     if (typeof process.env.HUGGINGFACE_ACCESS_TOKEN !== 'string')

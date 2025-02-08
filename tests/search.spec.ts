@@ -15,7 +15,8 @@ describe(
   () => {
     it('should search', async () => {
       const input = {
-        query: '飲食店の接客のQSCAとはなんでしょうか？それに関する問題を10問作ってください。それぞれの回答を該当箇所の章番号を添えて教えてください。',
+        query:
+          '飲食店の接客のQSCAとはなんでしょうか？それに関する問題を10問作ってください。それぞれの回答を該当箇所の章番号を添えて教えてください。',
         vectorStoreSourcePrefix: 'ssw-vector',
       }
       const res = await app.request('/api/v0/search', {
